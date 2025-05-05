@@ -68,4 +68,15 @@ h2 {
     display: none; /* será exibido ao iniciar o jogo */
     color: rgba(255, 255, 255, 0.8);
   }
-  
+  #fimDeJogo {
+    margin-top: 30px;
+  }
+  .triangulo {
+    width: 0;
+    height: 0;
+    position: absolute;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-bottom: 40px solid rgb(7, 148, 54);
+  }
+    

@@ -4,6 +4,7 @@ const instrucoes = document.getElementById('instrucoes');
 const hud = document.getElementById('hud');
 const pontosEl = document.getElementById('pontos');
 const tempoEl = document.getElementById('tempo');
+const quadrado = document.getElementById('quadrado');
 
 startBtn.onclick = () => {
   startBtn.style.display = "none";
@@ -14,12 +15,11 @@ startBtn.onclick = () => {
 };
 
 function iniciarJogo() {
-  const quadrado = document.getElementById('quadrado');
-
   const areaLargura = 900;
   const areaAltura = 500;
   const quadradoTamanho = 50;
   const circuloTamanho = 20;
+  const trianguloTamanho = 40;
 
   let posX = (areaLargura - quadradoTamanho) / 2;
   let posY = (areaAltura - quadradoTamanho) / 2;
@@ -29,10 +29,16 @@ function iniciarJogo() {
 
   let teclasPressionadas = {};
   let circulos = [];
+  let triangulos = [];
   let pontos = 0;
   let tempo = 0;
   let cronometro = null;
-
+  let pontosCom3Triangulos = 0;
+  let gameOver = false;
+  setInterval(() => {
+    if (!gameOver) moverTriangulos();
+  }, 30); // chama a função a cada 30ms
+  
   function atualizarPontuacao() {
     pontosEl.textContent = pontos;
   }
@@ -60,15 +66,61 @@ function iniciarJogo() {
     }
   }
 
+  function criarTriangulo() {
+    const triangulo = document.createElement('div');
+    triangulo.classList.add('triangulo');
+    triangulo.style.left = "0px";
+    triangulo.style.top = "0px";
+    area.appendChild(triangulo);
+    triangulos.push({ el: triangulo, x: 0, y: 0 });
+  }
+
+  function moverTriangulos() {
+    triangulos.forEach(t => {
+      const dx = posX - t.x;
+      const dy = posY - t.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const speed = 2.5; // Aumenta a velocidade
+  
+      if (dist > 0) {
+        t.x += (dx / dist) * speed;
+        t.y += (dy / dist) * speed;
+      }
+  
+      t.el.style.left = t.x + 'px';
+      t.el.style.top = t.y + 'px';
+  
+      // Verifica colisão com o quadrado
+      if (
+        t.x < posX + quadradoTamanho &&
+        t.x + trianguloTamanho > posX &&
+        t.y < posY + quadradoTamanho &&
+        t.y + trianguloTamanho > posY
+      ) {
+        encerrarJogo(false);
+      }
+    });
+  }
+  
+
   function reiniciarCirculos() {
-    // Limpa os círculos existentes
     circulos.forEach(circulo => area.removeChild(circulo));
     circulos = [];
-    // Cria novos círculos
     criarCirculos(5);
   }
 
+  function encerrarJogo(venceu) {
+    gameOver = true;
+    clearInterval(cronometro);
+    document.onkeydown = null;
+    document.onkeyup = null;
+    alert(venceu ? "Você venceu o jogo!" : "Game Over! Você foi pego.");
+    location.reload(); // reinicia a página
+  }
+
   function mover() {
+    if (gameOver) return;
+
     if (teclasPressionadas["ArrowRight"]) posX += 10;
     if (teclasPressionadas["ArrowLeft"]) posX -= 10;
     if (teclasPressionadas["ArrowUp"]) posY -= 10;
@@ -80,7 +132,8 @@ function iniciarJogo() {
     quadrado.style.left = posX + "px";
     quadrado.style.top = posY + "px";
 
-    // Verifica colisão com círculos
+    moverTriangulos();
+
     for (let i = circulos.length - 1; i >= 0; i--) {
       const circulo = circulos[i];
       const cx = parseInt(circulo.style.left);
@@ -93,13 +146,23 @@ function iniciarJogo() {
         posY + quadradoTamanho > cy
       ) {
         area.removeChild(circulo);
-        circulos.splice(i, 1); // Remove o círculo coletado
+        circulos.splice(i, 1);
         pontos++;
         atualizarPontuacao();
 
-        // Verifica se todos os círculos foram coletados
+        if (pontos % 5 === 0 && triangulos.length < 3) {
+          criarTriangulo();
+        }
+
+        if (triangulos.length === 3) {
+          pontosCom3Triangulos++;
+          if (pontosCom3Triangulos >= 5) {
+            encerrarJogo(true); // vitória
+          }
+        }
+
         if (circulos.length === 0) {
-          reiniciarCirculos(); // Reinicia os círculos
+          reiniciarCirculos();
         }
       }
     }
@@ -114,7 +177,7 @@ function iniciarJogo() {
     teclasPressionadas[event.key] = false;
   };
 
-  criarCirculos(5); // Cria os círculos no início do jogo
+  criarCirculos(5);
   atualizarPontuacao();
   iniciarCronometro();
 }
